@@ -35,21 +35,13 @@ void setup() {
 }
 
 void loop() {
-  digitalWrite(LED, HIGH); // turn LED ON
-  
-  delay(500);
-  
-  digitalWrite(LED, LOW); // turn off
-  
-  delay(500);
   
   val = analogRead(ANTENNA); // read the ANTENNA
-  
+  if( val <=446){
+    tone(LED, 1000,500);      
+  }
   mySerial.println(val); // send the value to Serial Monitor, ^Cmd-M
   
-  digitalWrite(LED, HIGH); // turn LED ON
-  
-  delay(10); digitalWrite(LED, LOW); // turn off
   
   delay(500);
   
