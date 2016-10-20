@@ -41,7 +41,7 @@ const int RESPONSE_OUTPUT = 3;
 #define EEPROM_VALID 124
 
 int trigger=440;
-byte val=0;
+
 /*
  * Always end in high to indicate that the system is working - the supply voltage is ok.
  */
@@ -62,9 +62,11 @@ void setup() {
   pinMode(RESPONSE_OUTPUT, OUTPUT); 
   digitalWrite( BELOW_TRIGGER_OUTPUT, LOW);
   digitalWrite( BELOW_TRIGGER_OUTPUT_2, LOW);  
-  val = EEPROM.read(0);
-  if( EEPROM.read(1) == EEPROM_VALID){
-    trigger=EEPROM.read(2)*4;
+
+  if( EEPROM.read(0) == EEPROM_VALID){
+    byte t0=EEPROM.read(1);
+    byte t1=EEPROM.read(2);
+    trigger = t0 | (t1<<8);
     showResponse(2);
   }
   showResponse(1);
@@ -79,14 +81,10 @@ void loop() {
   digitalWrite( BELOW_TRIGGER_OUTPUT_2, voltageTriggered ? HIGH: LOW);
 
   if ( digitalRead( CALIBRATION_INPUT) == HIGH ){
-    trigger = voltage-1;
-
-    EEPROM.write(0,val++);
-    if( val >=255)
-      val=0;
-    EEPROM.write(1, EEPROM_VALID);
-    EEPROM.write(2, trigger/4);
-    delay(500);
+    trigger = voltage;
+    EEPROM.write(0, EEPROM_VALID);
+    EEPROM.write(1, trigger&0xff);
+    EEPROM.write(2, trigger>>8);
     //indicate that calibration is done by flashing response LED
     showResponse(4);
   }
