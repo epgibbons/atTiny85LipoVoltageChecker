@@ -31,23 +31,17 @@
  */
 #include <EEPROM.h>
 
-//#include "SoftwareSerial.h"
-//
-//const int Rx = 3; // this is physical pin 2
-//
-//const int Tx = 4; // this is physical pin 3
-
-
 const int BELOW_TRIGGER_OUTPUT = 1; 
+const int BELOW_TRIGGER_OUTPUT_2 = 4; 
 const int CALIBRATION_INPUT = 0; 
 const int VOLTAGE_ADC = 1;
 const int RESPONSE_OUTPUT = 3;
 
-#define EEPROM_VALID 1
 
-//SoftwareSerial mySerial(Rx, Tx);
+#define EEPROM_VALID 124
+
 int trigger=440;
-
+byte val=0;
 /*
  * Always end in high to indicate that the system is working - the supply voltage is ok.
  */
@@ -63,16 +57,14 @@ void showResponse( int times, int delayMS=200){
 void setup() {
   analogReference(INTERNAL1V1);
   pinMode(BELOW_TRIGGER_OUTPUT, OUTPUT); 
+  pinMode(BELOW_TRIGGER_OUTPUT_2, OUTPUT); 
   pinMode(CALIBRATION_INPUT, INPUT); 
   pinMode(RESPONSE_OUTPUT, OUTPUT); 
-//  pinMode(Rx, INPUT);
-//  pinMode(Tx, OUTPUT);
-//  mySerial.begin(9600); // send serial data at 9600 bits/sec
-  int eepromCheckSet;
-  EEPROM.get(0, eepromCheckSet);
-  if( eepromCheckSet == EEPROM_VALID){
-    //assume value is written to address 2
-    EEPROM.get(sizeof(eepromCheckSet), trigger);
+  digitalWrite( BELOW_TRIGGER_OUTPUT, LOW);
+  digitalWrite( BELOW_TRIGGER_OUTPUT_2, LOW);  
+  val = EEPROM.read(0);
+  if( EEPROM.read(1) == EEPROM_VALID){
+    trigger=EEPROM.read(2)*4;
     showResponse(2);
   }
   showResponse(1);
@@ -82,14 +74,21 @@ void setup() {
 void loop() {
   
   int voltage = analogRead(VOLTAGE_ADC);
-  digitalWrite( BELOW_TRIGGER_OUTPUT, voltage <=trigger ? HIGH: LOW);
+  int voltageTriggered = voltage <= trigger;
+  digitalWrite( BELOW_TRIGGER_OUTPUT, voltageTriggered ? HIGH: LOW);
+  digitalWrite( BELOW_TRIGGER_OUTPUT_2, voltageTriggered ? HIGH: LOW);
+
   if ( digitalRead( CALIBRATION_INPUT) == HIGH ){
-    trigger = voltage;
-    int eepromCheckSet=EEPROM_VALID;
-    EEPROM.put(0, eepromCheckSet);
-    EEPROM.put(sizeof(eepromCheckSet), trigger);
-    //indicate that calibration is done by flashing LED
-    showResponse(2);
+    trigger = voltage-1;
+
+    EEPROM.write(0,val++);
+    if( val >=255)
+      val=0;
+    EEPROM.write(1, EEPROM_VALID);
+    EEPROM.write(2, trigger/4);
+    delay(500);
+    //indicate that calibration is done by flashing response LED
+    showResponse(4);
   }
   delay(1000);
   
